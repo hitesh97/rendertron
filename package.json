@@ -11,6 +11,7 @@
   "types": "build/rendertron.d.ts",
   "bin": "bin/rendertron",
   "scripts": {
+    "dev": "npm run build && npm run start",
     "build": "tsc",
     "prepack": "npm run build",
     "start": "node build/rendertron.js",

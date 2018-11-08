@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as fse from 'fs-extra';
 import * as Koa from 'koa';
 import * as bodyParser from 'koa-bodyparser';
@@ -8,12 +9,13 @@ import * as path from 'path';
 import * as puppeteer from 'puppeteer';
 import * as url from 'url';
 
-import {Renderer, ScreenshotError} from './renderer';
+import { Renderer, ScreenshotError } from './renderer';
 
 const CONFIG_PATH = path.resolve(__dirname, '../config.json');
 
 type Config = {
   datastoreCache: boolean;
+  outDir: string;
 };
 
 /**
@@ -22,9 +24,9 @@ type Config = {
  */
 export class Rendertron {
   app: Koa = new Koa();
-  config: Config = {datastoreCache: false};
-  private renderer: Renderer|undefined;
-  private port = process.env.PORT || '3000';
+  config: Config = { datastoreCache: false, outDir: '' };
+  private renderer: Renderer | undefined;
+  private port = process.env.PORT || '5000';
 
   async initialize() {
     // Load config.json if it exists.
@@ -32,38 +34,63 @@ export class Rendertron {
       this.config = Object.assign(this.config, await fse.readJson(CONFIG_PATH));
     }
 
-    const browser = await puppeteer.launch({args: ['--no-sandbox']});
+    if (this.config.outDir !== '') {
+      if (!fs.existsSync(path.resolve(__dirname, this.config.outDir))) {
+        fs.mkdirSync(path.resolve(__dirname, this.config.outDir));
+      }
+    }
+    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
     this.renderer = new Renderer(browser);
 
     this.app.use(koaCompress());
 
     this.app.use(bodyParser());
 
-    this.app.use(route.get('/', async (ctx: Koa.Context) => {
-      await koaSend(
-          ctx, 'index.html', {root: path.resolve(__dirname, '../src')});
-    }));
     this.app.use(
-        route.get('/_ah/health', (ctx: Koa.Context) => ctx.body = 'OK'));
+      route.get('/', async (ctx: Koa.Context) => {
+        await koaSend(ctx, 'index.html', {
+          root: path.resolve(__dirname, '../src')
+        });
+      })
+    );
+    this.app.use(
+      route.get('/_ah/health', (ctx: Koa.Context) => (ctx.body = 'OK'))
+    );
 
     // Optionally enable cache for rendering requests.
     if (this.config.datastoreCache) {
-      const {DatastoreCache} = await import('./datastore-cache');
+      const { DatastoreCache } = await import('./datastore-cache');
       this.app.use(new DatastoreCache().middleware());
     }
 
     this.app.use(
-        route.get('/render/:url(.*)', this.handleRenderRequest.bind(this)));
-    this.app.use(route.get(
-        '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
-    this.app.use(route.post(
-        '/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this)));
+      route.get('/render/:url(.*)', this.handleRenderRequest.bind(this))
+    );
+    this.app.use(
+      route.get(
+        '/render-save/:url(.*)',
+        this.handleRenderSaveRequest.bind(this)
+      )
+    );
+    this.app.use(
+      route.get('/screenshot/:url(.*)', this.handleScreenshotRequest.bind(this))
+    );
+    this.app.use(
+      route.post(
+        '/screenshot/:url(.*)',
+        this.handleScreenshotRequest.bind(this)
+      )
+    );
 
     return this.app.listen(this.port, () => {
       console.log(`Listening on port ${this.port}`);
     });
   }
 
+  getUrlFileName(href: string): string {
+    const parsedUrl = url.parse(href);
+    return parsedUrl.pathname ? parsedUrl.pathname : '';
+  }
   /**
    * Checks whether or not the URL is valid. For example, we don't want to allow
    * the requester to read the file system via Chrome.
@@ -78,10 +105,51 @@ export class Rendertron {
 
     return false;
   }
+  async handleRenderSaveRequest(ctx: Koa.Context, url: string) {
+    if (!this.renderer) {
+      throw new Error('No renderer initalized yet.');
+    }
+
+    if (this.restricted(url)) {
+      ctx.status = 403;
+      return;
+    }
+
+    const filePathName = this.getUrlFileName(url);
+    const destFolderPath = path.resolve(
+      __dirname,
+      this.config.outDir + filePathName
+    );
+    console.log('----------------------------');
+    console.log(filePathName);
+    console.log('----------------------------');
+
+    const mobileVersion = 'mobile' in ctx.query ? true : false;
+
+    const serialized = await this.renderer.serialize(url, mobileVersion);
+    // Mark the response as coming from Rendertron.
+    ctx.set('x-renderer', 'rendertron');
+    ctx.status = serialized.status;
+    ctx.body = serialized.content;
+    // const desiredMode = 0o2775;
+    fse
+      .ensureDir(destFolderPath)
+      .then(() => {
+        console.log(`folder '${destFolderPath}' Created !`);
+        fs.writeFileSync(
+          path.resolve(`${destFolderPath}/index.html`),
+          serialized.content
+        );
+      })
+      .catch(err => {
+        console.error(`Could not create folder '${destFolderPath}' !!`);
+        console.error(err);
+      });
+  }
 
   async handleRenderRequest(ctx: Koa.Context, url: string) {
     if (!this.renderer) {
-      throw (new Error('No renderer initalized yet.'));
+      throw new Error('No renderer initalized yet.');
     }
 
     if (this.restricted(url)) {
@@ -100,7 +168,7 @@ export class Rendertron {
 
   async handleScreenshotRequest(ctx: Koa.Context, url: string) {
     if (!this.renderer) {
-      throw (new Error('No renderer initalized yet.'));
+      throw new Error('No renderer initalized yet.');
     }
 
     if (this.restricted(url)) {
@@ -122,7 +190,11 @@ export class Rendertron {
 
     try {
       const img = await this.renderer.screenshot(
-          url, mobileVersion, dimensions, options);
+        url,
+        mobileVersion,
+        dimensions,
+        options
+      );
       ctx.set('Content-Type', 'image/jpeg');
       ctx.set('Content-Length', img.length.toString());
       ctx.body = img;
