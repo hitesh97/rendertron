@@ -23,12 +23,15 @@ type Config = {
  * requests through to the renderer.
  */
 export class Rendertron {
+  constructor(PORT: string = '4000') {
+    process.env.PORT = process.env.PORT || PORT;
+  }
   app: Koa = new Koa();
   config: Config = { datastoreCache: false, outDir: '' };
   private renderer: Renderer | undefined;
-  private port = process.env.PORT || '5000';
+  //private port = process.env.PORT;
 
-  async initialize() {
+  public async initialize() {
     // Load config.json if it exists.
     if (fse.pathExistsSync(CONFIG_PATH)) {
       this.config = Object.assign(this.config, await fse.readJson(CONFIG_PATH));
@@ -82,8 +85,8 @@ export class Rendertron {
       )
     );
 
-    return this.app.listen(this.port, () => {
-      console.log(`Listening on port ${this.port}`);
+    return this.app.listen(process.env.PORT, () => {
+      console.log(`Listening on port ${process.env.PORT}`);
     });
   }
 
@@ -204,18 +207,18 @@ export class Rendertron {
     }
   }
 }
-
+/* 
 async function logUncaughtError(error: Error) {
   console.error('Uncaught exception');
   console.error(error);
   process.exit(1);
-}
+} */
 
 // Start rendertron if not running inside tests.
-if (!module.parent) {
+/* if (!module.parent) {
   const rendertron = new Rendertron();
   rendertron.initialize();
 
   process.on('uncaughtException', logUncaughtError);
   process.on('unhandledRejection', logUncaughtError);
-}
+} */
