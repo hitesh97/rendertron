@@ -73,6 +73,13 @@ export class Renderer {
       page.setUserAgent(MOBILE_USERAGENT);
     }
 
+    const cookies: puppeteer.SetCookie[] = new Array<puppeteer.SetCookie>();
+    cookies.push(<puppeteer.SetCookie>{
+      name: 'CookiePolicyAccepted',
+      value: 'true'
+    });
+
+    await page.setCookie(...cookies);
     page.evaluateOnNewDocument('customElements.forcePolyfill = true');
     page.evaluateOnNewDocument('ShadyDOM = {force: true}');
     page.evaluateOnNewDocument('ShadyCSS = {shimcssproperties: true}');

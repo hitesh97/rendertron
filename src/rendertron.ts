@@ -23,13 +23,12 @@ type Config = {
  * requests through to the renderer.
  */
 export class Rendertron {
-  constructor(PORT: string = '4000') {
+  constructor(private PORT: string = '4000') {
     process.env.PORT = process.env.PORT || PORT;
   }
   app: Koa = new Koa();
   config: Config = { datastoreCache: false, outDir: '' };
   private renderer: Renderer | undefined;
-  //private port = process.env.PORT;
 
   public async initialize() {
     // Load config.json if it exists.
@@ -85,8 +84,8 @@ export class Rendertron {
       )
     );
 
-    return this.app.listen(process.env.PORT, () => {
-      console.log(`Listening on port ${process.env.PORT}`);
+    return this.app.listen(this.PORT, () => {
+      console.log(`Listening on port ${this.PORT}`);
     });
   }
 
@@ -123,9 +122,9 @@ export class Rendertron {
       __dirname,
       this.config.outDir + filePathName
     );
-    console.log('----------------------------');
-    console.log(filePathName);
-    console.log('----------------------------');
+    // console.log('----------------------------');
+    // console.log(filePathName);
+    // console.log('----------------------------');
 
     const mobileVersion = 'mobile' in ctx.query ? true : false;
 
