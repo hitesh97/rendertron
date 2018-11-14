@@ -1,6 +1,5 @@
 import { Rendertron } from './rendertron';
 import fetch from 'node-fetch';
-// import asyncForeach from 'async-foreach';
 
 export class RendertronClient {
   constructor(PORT: string = '6000') {
@@ -21,8 +20,8 @@ export class RendertronClient {
     console.log('tron initialised !!');
 
     const tronAPIUrl = `http://localhost:${process.env.PORT}/render-save/`;
-    //const baseUrl = 'https://www.microlease.com/uk/';
-    const baseUrl = 'https://www.electrorent.com/us/';
+    const baseUrl = 'https://www.microlease.com/uk/';
+    // const baseUrl = 'https://www.electrorent.com/us/';
     const urlsToFetch: string[] = new Array(
       'home',
       'rent-test-equipment',
@@ -32,48 +31,37 @@ export class RendertronClient {
       'manufacturer/advt/advantest',
       'manufacturer/ixia/ixia',
       'product-group/3/rf-signal-generators',
-      'product-group/13/oscilloscopes'
+      'product-group/13/oscilloscopes',
+      'manufacturer/eip1/phase matrix, inc.'
     );
 
-    // tslint:disable-next-line:prefer-const
-    const forEach = require('async-foreach').forEach;
-
-    // tslint:disable-next-line:arrow-parens
-    forEach(urlsToFetch, async (url: string) => {
-      const urlToRequest = `${tronAPIUrl}${baseUrl}${url}`;
-      // tslint:disable-next-line:arrow-parens
-      await fetch(urlToRequest)
-        // tslint:disable-next-line:arrow-parens
-        .then(response => {
-          if (response.ok) {
-            console.log(`fetched Url: ${urlToRequest} !!`);
-          }
-        })
-        // tslint:disable-next-line:arrow-parens
-        .catch(error => {
-          console.error(`Url: ${urlToRequest} could not be fetched!!`);
-          console.error(error);
-        });
-    });
-    // tslint:disable-next-line:arrow-parens
-    /* await urlsToFetch.forEach(async url => {
-      const urlToRequest = `${tronAPIUrl}${baseUrl}${url}`;
-      // tslint:disable-next-line:arrow-parens
-      await fetch(urlToRequest)
-        // tslint:disable-next-line:arrow-parens
-        .then(response => {
-          if (response.ok) {
-            console.log(`fetched Url: ${urlToRequest} !!`);
-          }
-        })
-        // tslint:disable-next-line:arrow-parens
-        .catch(error => {
-          console.error(`Url: ${urlToRequest} could not be fetched!!`);
-          console.error(error);
-        });
-    }); */
-
-    console.log(`ALL fetch Finished !!`);
+    const getParallel = async function() {
+      //transform requests into Promises, await all
+      try {
+        await Promise.all(
+          // tslint:disable-next-line:arrow-parens
+          urlsToFetch.map(async url => {
+            const urlToRequest = `${tronAPIUrl}${baseUrl}${url}`;
+            await fetch(urlToRequest)
+              // tslint:disable-next-line:arrow-parens
+              .then(response => {
+                if (response.ok) {
+                  console.log(`fetched Url: ${urlToRequest} !!`);
+                }
+              })
+              // tslint:disable-next-line:arrow-parens
+              .catch(error => {
+                console.error(`Url: ${urlToRequest} could not be fetched!!`);
+                console.error(error);
+              });
+          })
+        );
+      } catch (err) {
+        console.error(err);
+      }
+      console.log(`ALL fetch Finished !!`);
+    };
+    getParallel();
   }
 }
 

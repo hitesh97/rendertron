@@ -76,7 +76,8 @@ export class Renderer {
     const cookies: puppeteer.SetCookie[] = new Array<puppeteer.SetCookie>();
     cookies.push(<puppeteer.SetCookie>{
       name: 'CookiePolicyAccepted',
-      value: 'true'
+      value: 'true',
+      url: requestUrl
     });
 
     await page.setCookie(...cookies);
