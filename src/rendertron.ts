@@ -91,7 +91,17 @@ export class Rendertron {
 
   getUrlFileName(href: string): string {
     const parsedUrl = url.parse(href);
-    return parsedUrl.pathname ? parsedUrl.pathname : '';
+    let query = parsedUrl.query ? parsedUrl.query : '';
+    query = query.replace(/(&)/gi, '/');
+    query = query.replace(/=/gi, '/');
+    const returnUrl = parsedUrl.pathname ? parsedUrl.pathname : '';
+    // console.log('---------- getUrlFileName -----------');
+    // console.log(href);
+    // console.log(parsedUrl);
+    // console.log(decodeURI(returnUrl));
+    // console.log(query);
+    // console.log('---------- getUrlFileName -----------');
+    return decodeURI(`${returnUrl}/${query}`);
   }
   /**
    * Checks whether or not the URL is valid. For example, we don't want to allow
@@ -120,11 +130,12 @@ export class Rendertron {
     const filePathName = this.getUrlFileName(url);
     const destFolderPath = path.resolve(
       __dirname,
-      this.config.outDir + filePathName
+      `${this.config.outDir}\\${filePathName}`
     );
-    // console.log('----------------------------');
+    // console.log('----------- destFolderPath -----------------');
     // console.log(filePathName);
-    // console.log('----------------------------');
+    // console.log(destFolderPath);
+    // console.log('-------------- destFolderPath --------------');
 
     const mobileVersion = 'mobile' in ctx.query ? true : false;
 
@@ -211,13 +222,14 @@ async function logUncaughtError(error: Error) {
   console.error('Uncaught exception');
   console.error(error);
   process.exit(1);
-} */
+}
 
 // Start rendertron if not running inside tests.
-/* if (!module.parent) {
+if (!module.parent) {
   const rendertron = new Rendertron();
   rendertron.initialize();
 
   process.on('uncaughtException', logUncaughtError);
   process.on('unhandledRejection', logUncaughtError);
-} */
+}
+ */
