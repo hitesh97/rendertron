@@ -123,9 +123,17 @@ export class RendertronClient {
       'manufacturer/ahsys/a.h. systems inc',
       'manufacturer/afs /advanced fibre solution',
       'manufacturer/asr/associated research, inc.',
-      'products/Keysight-Technologies/Other-Test-Equipment/04142-61633?basemodelid=8',
+      'products/Keysight-Technologies/Other-Test-Equipment/04155-61612?basemodelid=38',
       'products/Keysight-Technologies/Other-Test-Equipment/04142-61636?basemodelid=10',
-      'products/Keysight-Technologies/Other-Test-Equipment/04155-40045?basemodelid=24'
+      'products/Keysight-Technologies/Other-Test-Equipment/04155-40045?basemodelid=24',
+      'products/Keysight-Technologies/Other-Test-Equipment/04155-61714?basemodelid=53',
+      'products/Keysight-Technologies/Other-Test-Equipment/0699-3702?basemodelid=116',
+      'products/Keysight-Technologies/RF-Power-Noise-and-Other-Products/11667A?basemodelid=322',
+      'products/Pomona-Electronics/Other-Test-Equipment/72938?basemodelid=128207',
+      'products/Pomona-Electronics/Other-Test-Equipment/72940-8?basemodelid=128209',
+      'products/Anritsu/Other-Test-Equipment/S332E-3025?basemodelid=126468',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA31?basemodelid=126489',
+      'products/Viavi-formerly-JDSU-/Other-Test-Equipment/C5243GCPRI-U1?basemodelid=126499'
     );
 
     /*

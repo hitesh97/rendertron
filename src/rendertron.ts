@@ -41,7 +41,11 @@ export class Rendertron {
         fs.mkdirSync(path.resolve(__dirname, this.config.outDir));
       }
     }
-    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({
+      executablePath:
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     this.renderer = new Renderer(browser);
 
     this.app.use(koaCompress());
@@ -217,7 +221,7 @@ export class Rendertron {
     }
   }
 }
-/* 
+/*
 async function logUncaughtError(error: Error) {
   console.error('Uncaught exception');
   console.error(error);

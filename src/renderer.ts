@@ -52,8 +52,9 @@ export class Renderer {
       const base = document.createElement('base');
       base.setAttribute('href', origin);
 
-      const bases = document.head.querySelectorAll('base');
-      if (bases.length) {
+      const bases =
+        document && document.head && document.head.querySelectorAll('base');
+      if (bases && bases.length) {
         // Patch existing <base> if it is relative.
         const existingBase = bases[0].getAttribute('href') || '';
         if (existingBase.startsWith('/')) {
@@ -61,7 +62,9 @@ export class Renderer {
         }
       } else {
         // Only inject <base> if it doesn't already exist.
-        document.head.insertAdjacentElement('afterbegin', base);
+        if (document && document.head) {
+          document.head.insertAdjacentElement('afterbegin', base);
+        }
       }
     }
 
@@ -124,7 +127,9 @@ export class Renderer {
     // code.
     let statusCode = response.status();
     const newStatusCode = await page
-      .$eval('meta[name="render:status_code"]', element =>
+      // tslint:disable-next-line:arrow-parens
+      // tslint:disable-next-line:no-any
+      .$eval('meta[name="render:status_code"]', (element: any) =>
         parseInt(element.getAttribute('content') || '')
       )
       .catch(() => undefined);
