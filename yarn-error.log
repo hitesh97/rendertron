@@ -43,10 +43,12 @@ npm manifest:
     },
     "dependencies": {
       "@google-cloud/datastore": "^2.0.0",
+      "@types/async": "^2.0.50",
       "@types/fs-extra": "^5.0.4",
       "@types/jsonpath": "^0.2.0",
       "@types/node-fetch": "^2.1.4",
       "@webcomponents/webcomponentsjs": "^2.2.0",
+      "async": "^2.6.1",
       "chrome-launcher": "^0.10.5",
       "chrome-remote-interface": "^0.26.1",
       "cross-env": "^5.2.0",

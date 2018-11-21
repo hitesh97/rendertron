@@ -15,6 +15,141 @@ export class RendertronClient {
   }
 
   private _tron: Rendertron | undefined;
+  // private port = process.env.PORT;
+  public async start() {
+    this._tron = new Rendertron(process.env.PORT);
+    await this._tron.initialize();
+    // server has started on port 5000
+    // make API one of the following type of requests  to: http://localhost:5000/
+    // http://localhost:5000/render-save/https://www.microlease.com/uk/new-test-equipment
+    // http://localhost:5000/render/https://www.microlease.com/uk/new-test-equipment
+    // http://localhost:5000/screenshot/https://www.microlease.com/uk/new-test-equipment
+
+    console.log('tron initialised !!');
+
+    const invalidUrls: string[] = new Array();
+    const validSuccessUrls: string[] = new Array();
+    const validFailedUrls: string[] = new Array();
+    const tronAPIUrl = `http://localhost:${process.env.PORT}/render-save/`;
+    const baseUrl = 'https://www.microlease.com/uk/';
+    // const baseUrl = 'https://www.electrorent.com/us/';
+
+    const urlsToFetch: string[] = new Array(
+      'home',
+      'rent-test-equipment',
+      'used-test-equipment',
+      'new-test-equipment',
+      'manufacturer/3ztel/3z-telecom',
+      'manufacturer/advt/advantest',
+      'manufacturer/ixia/ixia',
+      'product-group/3/rf-signal-generators',
+      'product-group/13/oscilloscopes',
+      'manufacturer/abb/asea brown boveri',
+      'manufacturer/ahsys/a.h. systems inc',
+      'manufacturer/afs /advanced fibre solution',
+      'manufacturer/asr/associated research, inc.',
+      'products/Keysight-Technologies/Other-Test-Equipment/04155-61612?basemodelid=38',
+      'products/Keysight-Technologies/Other-Test-Equipment/04142-61636?basemodelid=10',
+      'products/Keysight-Technologies/Other-Test-Equipment/04155-40045?basemodelid=24',
+      'products/Keysight-Technologies/Other-Test-Equipment/04155-61714?basemodelid=53',
+      'products/Keysight-Technologies/Other-Test-Equipment/0699-3702?basemodelid=116',
+      'products/Keysight-Technologies/RF-Power-Noise-and-Other-Products/11667A?basemodelid=322',
+      'products/Pomona-Electronics/Other-Test-Equipment/72938?basemodelid=128207',
+      'products/Pomona-Electronics/Other-Test-Equipment/72940-8?basemodelid=128209',
+      'products/Anritsu/Other-Test-Equipment/S332E-3025?basemodelid=126468',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA31?basemodelid=126489',
+      'products/Viavi-formerly-JDSU-/Other-Test-Equipment/C5243GCPRI-U1?basemodelid=126499',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT ZA31?basemodelid=1264893545',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA3187,?basemodelid=126489',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA3187&&?basemodelid=126489',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA3187^?basemodelid=126489',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT$ZA3187?basemodelid=126489',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT£ZA3187?basemodelid=126489',
+      'products/Rohde-Schwarz/Other-Test-Equipment/RT^ZA3187?basemodelid=126489'
+    );
+
+    const getParallel = async function() {
+      //transform requests into Promises, await all
+      try {
+        await Promise.all(
+          urlsToFetch.map(async url => {
+            const isValid = isValidUrl(url);
+            if (isValid) {
+              const urlToRequest = encodeURI(`${baseUrl}${url}`);
+              const parsedUrl = urlUtils.parse(urlToRequest);
+              const encodedQueryStr = encodeURIComponent(
+                parsedUrl.search ? parsedUrl.search : ''
+              );
+              const finalUrlToRequest = `${tronAPIUrl}${parsedUrl.protocol}${
+                parsedUrl.host
+              }${parsedUrl.pathname}${encodedQueryStr}`;
+
+              await fetch(finalUrlToRequest)
+                .then(response => {
+                  if (response.ok) {
+                    // console.log(`finalUrlToRequest: ${finalUrlToRequest} !!`);
+                    console.log(`fetched Url: ${urlToRequest} !!`);
+                    validSuccessUrls.push(urlToRequest);
+                  }
+                })
+                .catch(error => {
+                  validFailedUrls.push(urlToRequest);
+                  console.error(`Url: ${urlToRequest} could not be fetched!!`);
+                  console.error(error);
+                });
+            } else {
+              invalidUrls.push(url);
+            }
+          })
+        )
+          .then(async () => {
+            const invalidUrlsFile = 'invalid_urls.json';
+            const fileCreated = await createFile(
+              baseUrl,
+              invalidUrlsFile,
+              invalidUrls
+            );
+            if (fileCreated) {
+              console.log(`File ${invalidUrlsFile} was created !!`);
+            } else {
+              console.log(`Error creating file ${invalidUrlsFile} !!`);
+            }
+          })
+          .then(async () => {
+            const validSuccessUrlsFile = 'valid_success_urls.json';
+            const fileCreated = await createFile(
+              baseUrl,
+              validSuccessUrlsFile,
+              validSuccessUrls
+            );
+            if (fileCreated) {
+              console.log(`File ${validSuccessUrlsFile} was created !!`);
+            } else {
+              console.log(`Error creating file ${validSuccessUrlsFile} !!`);
+            }
+          })
+          .then(async () => {
+            const validFailedUrlsFile = 'valid_failed_urls.json';
+            const fileCreated = await createFile(
+              baseUrl,
+              validFailedUrlsFile,
+              validFailedUrls
+            );
+            if (fileCreated) {
+              console.log(`File ${validFailedUrlsFile} was created !!`);
+            } else {
+              console.log(`Error creating file ${validFailedUrlsFile} !!`);
+            }
+          })
+          .then(() => {
+            console.log(`ALL fetch Finished !!`);
+          });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    getParallel();
+  }
 
   public async startSiteMap() {
     this._tron = new Rendertron(process.env.PORT);
@@ -212,6 +347,9 @@ export class RendertronClient {
                             const baseLogFolderPath = `${siteBaseUrl}\\logs`;
                             const baseFolderPath = `${baseLogFolderPath}\\${siteMapLogFileName}`;
 
+                            console.log('--*******************--');
+                            console.log(baseFolderPath);
+                            console.log('--*******************--');
                             await CreateLogFile(
                               baseFolderPath,
                               invalidUrlsFile,
@@ -230,20 +368,14 @@ export class RendertronClient {
                               validFailedUrls
                             );
 
-                            if (
-                              fetchErrors &&
-                              fetchErrors.length &&
-                              fetchErrors.length > 0
-                            ) {
-                              const allMessages = fetchErrors.map(
-                                x => `${x.message} - ${x.stack}`
-                              );
-                              await CreateLogFile(
-                                baseLogFolderPath,
-                                errorLogFileName,
-                                allMessages
-                              );
-                            }
+                            const allMessages = fetchErrors.map(
+                              x => `${x.message} - ${x.stack}`
+                            );
+                            await CreateLogFile(
+                              baseLogFolderPath,
+                              errorLogFileName,
+                              allMessages
+                            );
 
                             invalidUrls = new Array();
                             validSuccessUrls = new Array();
@@ -305,6 +437,7 @@ async function logUncaughtError(error: Error) {
 
 if (!module.parent) {
   const rendertronClient = new RendertronClient();
+  // rendertronClient.start();
   rendertronClient.startSiteMap();
 
   process.on('uncaughtException', logUncaughtError);
