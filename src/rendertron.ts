@@ -11,12 +11,15 @@ import * as url from 'url';
 
 import { Renderer, ScreenshotError } from './renderer';
 
+import { Config } from './Types';
+
 const CONFIG_PATH = path.resolve(__dirname, '../config.json');
 
-type Config = {
+/* type Config = {
   datastoreCache: boolean;
   outDir: string;
-};
+  chromeExePath: string;
+}; */
 
 /**
  * Rendertron rendering service. This runs the server which routes rendering
@@ -27,7 +30,11 @@ export class Rendertron {
     process.env.PORT = process.env.PORT || PORT;
   }
   app: Koa = new Koa();
-  config: Config = { datastoreCache: false, outDir: '' };
+  config: Config = {
+    datastoreCache: false,
+    outDir: '',
+    chromeExePath: ''
+  };
   private renderer: Renderer | undefined;
 
   public async initialize() {
@@ -42,8 +49,7 @@ export class Rendertron {
       }
     }
     const browser = await puppeteer.launch({
-      executablePath:
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      executablePath: this.config.chromeExePath,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     this.renderer = new Renderer(browser);

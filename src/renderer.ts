@@ -127,7 +127,6 @@ export class Renderer {
     // code.
     let statusCode = response.status();
     const newStatusCode = await page
-      // tslint:disable-next-line:arrow-parens
       // tslint:disable-next-line:no-any
       .$eval('meta[name="render:status_code"]', (element: any) =>
         parseInt(element.getAttribute('content') || '')

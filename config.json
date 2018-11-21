@@ -1,4 +1,5 @@
 {
   "datastoreCache": false,
-  "outDir": "output"
+  "outDir": "output",
+  "chromeExePath": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
 }
