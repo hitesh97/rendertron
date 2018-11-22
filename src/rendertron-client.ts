@@ -6,8 +6,13 @@ import * as convert from 'xml-js';
 import * as jp from 'jsonpath';
 import { isValidUrl } from './urlUtils';
 import { createFile } from './fileUtils';
-import { Promise } from 'core-js';
+//import { Promise } from 'core-js';
 import * as async from 'async';
+
+interface TaskItem {
+  siteMap: string;
+  urlToFetch: string;
+}
 
 export class RendertronClient {
   constructor(PORT: string = '6000') {
@@ -27,8 +32,8 @@ export class RendertronClient {
 
     console.log('tron initialised !!');
 
-    const maxItemCount: number = 2;
-    const sitemapUrls: string[] = new Array();
+    const maxItemCount: number = 4;
+    //const sitemapUrls: string[] = new Array();
     // const validUrlsToFetch: string[] = new Array();
     // tslint:disable-next-line:prefer-const
     let invalidUrls: string[] = new Array();
@@ -36,9 +41,13 @@ export class RendertronClient {
     let validSuccessUrls: string[] = new Array();
     // tslint:disable-next-line:prefer-const
     let validFailedUrls: string[] = new Array();
-    let fetchErrors: Error[] = new Array();
+    const fetchErrors: Error[] = new Array();
     const tronAPIUrl = `http://localhost:${process.env.PORT}/render-save/`;
     const MLSiteMapRoots: string[] = new Array();
+    //const siteMapsToFetch: string[] = new Array();
+    let currSitemapUrl = '';
+    let siteBaseUrl = '';
+    let siteMapLogFileName = '';
 
     // fetch root sitemap(s) for ML and ER
     /*
@@ -74,210 +83,97 @@ export class RendertronClient {
     console.log(RootSitemapToFetch);
     console.log('------------- RootSitemapToFetch ------------------');
 
-    const fetchSitemapsParallel = async function(
-      siteMapRoots: string[],
-      siteMapsToFetch: string[]
-    ) {
-      return await Promise.all(
-        siteMapRoots.map(async (url: string) => {
-          const urlToRequest = `${url}`;
-          return await fetch(urlToRequest).then(response => {
-            if (response.ok) {
-              response.text().then(async responseText => {
-                //console.log(responseText);
-                const sitemapJs = convert.xml2js(responseText, {
-                  compact: true
-                });
-                const locs = jp.query(sitemapJs, '$..loc');
+    const queue = async.queue((task: TaskItem, cb) => {
+      setTimeout(async () => {
+        if (currSitemapUrl !== task.siteMap) {
+          currSitemapUrl = task.siteMap;
+          const parsedSiteMapUrl = urlUtils.parse(currSitemapUrl);
+          siteMapLogFileName = parsedSiteMapUrl.path
+            ? parsedSiteMapUrl.path.substr(
+                parsedSiteMapUrl.path.lastIndexOf('/') + 1
+              )
+            : '';
+          console.log(`siteMapLogFileName : ${siteMapLogFileName}`);
 
-                // tslint:disable-next-line:no-any
-                locs.map(async (loc: any) => {
-                  if (loc._text.endsWith('.xml')) {
-                    siteMapsToFetch.push(loc._text);
-                  }
-                });
-                console.log(siteMapsToFetch);
-                let siteBaseUrl = '';
-                async.series(
-                  siteMapsToFetch.map(siteMapToFetch => {
-                    // tslint:disable-next-line:no-any
-                    return async function(callback: any) {
-                      //console.log(siteMapToFetch);
+          const validUrlForCountryCode = task.urlToFetch;
+          const parsedUrlForCountryCode = urlUtils.parse(
+            validUrlForCountryCode
+          );
+          const countryCode = parsedUrlForCountryCode.path
+            ? parsedUrlForCountryCode.path.slice(
+                0,
+                parsedUrlForCountryCode.path.indexOf('/', 1) + 1
+              )
+            : '';
+          siteBaseUrl = `${parsedUrlForCountryCode.protocol}//${
+            parsedUrlForCountryCode.hostname
+          }${countryCode}`;
 
-                      const parsedSiteMapUrl = urlUtils.parse(siteMapToFetch);
-                      const siteMapLogFileName = parsedSiteMapUrl.path
-                        ? parsedSiteMapUrl.path.substr(
-                            parsedSiteMapUrl.path.lastIndexOf('/') + 1
-                          )
-                        : '';
-                      console.log(siteMapLogFileName);
-                      const sitemapResp = await fetch(siteMapToFetch);
-                      if (sitemapResp.ok) {
-                        const sitemapRespText = await sitemapResp.text();
+          console.log(`siteBaseUrl : ${siteBaseUrl}`);
+        }
+        console.log(`${task.siteMap} - ${task.urlToFetch}`);
 
-                        const sitemapJs = convert.xml2js(sitemapRespText, {
-                          compact: true
-                        });
+        const parsedPageUrl = urlUtils.parse(task.urlToFetch);
 
-                        const locs = jp.query(sitemapJs, '$..loc');
+        const urlPathWithQuery = parsedPageUrl.path ? parsedPageUrl.path : '';
 
-                        //create Site Base URL from one of the URLs to fetch!
-                        if (locs.length && locs.length > 0) {
-                          // do this only one time first time..!!
-                          const validUrlForCountryCode = locs[0]._text.trim();
-                          const parsedUrlForCountryCode = urlUtils.parse(
-                            validUrlForCountryCode
-                          );
-                          const countryCode = parsedUrlForCountryCode.path
-                            ? parsedUrlForCountryCode.path.slice(
-                                0,
-                                parsedUrlForCountryCode.path.indexOf('/', 1) + 1
-                              )
-                            : '';
-                          siteBaseUrl = `${parsedUrlForCountryCode.protocol}//${
-                            parsedUrlForCountryCode.hostname
-                          }${countryCode}`;
+        // console.log(urlPathWithQuery);
+        const isValid = isValidUrl(urlPathWithQuery);
+        if (isValid) {
+          console.log('----- valid -------');
 
-                          // console.log(siteBaseUrl);
+          const encodedQueryStr = encodeURIComponent(
+            parsedPageUrl.search ? parsedPageUrl.search : ''
+          );
+          const finalUrlToRequest = `${tronAPIUrl}${parsedPageUrl.protocol}${
+            parsedPageUrl.host
+          }${parsedPageUrl.pathname}${encodedQueryStr}`;
 
-                          return await Promise.all(
-                            // tslint:disable-next-line:no-any
-                            locs.map(async (loc: any, index: number) => {
-                              if (loc._text.endsWith('.xml')) {
-                                //may be add to the main sitemaps array !!
-                                // siteMapsToFetch.push(loc._text);
-                                console.log('Got another sitemap !');
-                                console.log(loc._text);
-                              } else {
-                                //validUrlsToFetch.push(loc._text);
-                                if (index > maxItemCount) {
-                                  return false;
-                                }
-                                // do this only one time first time..!!
-                                const pageUrl = loc._text;
-                                const trimmedPageUrl = pageUrl.trim();
-                                //console.log(`trimmedPageUrl: ${trimmedPageUrl}`);
-                                const parsedPageUrl = urlUtils.parse(
-                                  trimmedPageUrl
-                                );
+          console.log(`processing url: ${finalUrlToRequest}`);
 
-                                const urlPathWithQuery = parsedPageUrl.path
-                                  ? parsedPageUrl.path
-                                  : '';
+          await fetch(finalUrlToRequest)
+            .then(response => {
+              if (response.ok) {
+                // console.log(`finalUrlToRequest: ${finalUrlToRequest} !!`);
+                console.log(`fetched Url: ${task.urlToFetch} !!`);
+                validSuccessUrls.push(task.urlToFetch);
+              }
+            })
+            .catch(async (error: Error) => {
+              validFailedUrls.push(task.urlToFetch);
+              fetchErrors.push(error);
+              console.error(`Url: ${task.urlToFetch} could not be fetched!!`);
+            });
+        } else {
+          console.log('----- Invalid -------');
+          invalidUrls.push(task.urlToFetch);
+        }
+        cb();
+      }, 100);
+    }, 2);
 
-                                // console.log(urlPathWithQuery);
-                                const isValid = isValidUrl(urlPathWithQuery);
-                                if (isValid) {
-                                  const encodedQueryStr = encodeURIComponent(
-                                    parsedPageUrl.search
-                                      ? parsedPageUrl.search
-                                      : ''
-                                  );
-                                  const finalUrlToRequest = `${tronAPIUrl}${
-                                    parsedPageUrl.protocol
-                                  }${parsedPageUrl.host}${
-                                    parsedPageUrl.pathname
-                                  }${encodedQueryStr}`;
+    queue.drain = async () => {
+      console.log(validSuccessUrls);
+      console.log(validFailedUrls);
+      console.log(invalidUrls);
+      console.log(fetchErrors);
 
-                                  console.log(`processing url: ${loc._text}`);
+      const invalidUrlsFile = `invalid.json`;
+      const validSuccessUrlsFile = `validSuccess.json`;
+      const validFailedUrlsFile = `validFailed.json`;
+      //const errorLogFileName = `errorLog.json`;
 
-                                  await fetch(finalUrlToRequest)
-                                    .then(response => {
-                                      if (response.ok) {
-                                        // console.log(`finalUrlToRequest: ${finalUrlToRequest} !!`);
-                                        console.log(
-                                          `fetched Url: ${trimmedPageUrl} !!`
-                                        );
-                                        validSuccessUrls.push(trimmedPageUrl);
-                                      }
-                                    })
-                                    .catch(async (error: Error) => {
-                                      validFailedUrls.push(trimmedPageUrl);
-                                      fetchErrors.push(error);
-                                      console.error(
-                                        `Url: ${trimmedPageUrl} could not be fetched!!`
-                                      );
-                                    });
-                                } else {
-                                  invalidUrls.push(trimmedPageUrl);
-                                }
-                              }
-                            })
-                            // tslint:disable-next-line:arrow-parens
-                          ).then(async () => {
-                            const invalidUrlsFile = `invalid.json`;
-                            const validSuccessUrlsFile = `validSuccess.json`;
-                            const validFailedUrlsFile = `validFailed.json`;
-                            const errorLogFileName = `errorLog.json`;
-                            const baseLogFolderPath = `${siteBaseUrl}\\logs`;
-                            const baseFolderPath = `${baseLogFolderPath}\\${siteMapLogFileName}`;
-
-                            await CreateLogFile(
-                              baseFolderPath,
-                              invalidUrlsFile,
-                              invalidUrls
-                            );
-
-                            await CreateLogFile(
-                              baseFolderPath,
-                              validSuccessUrlsFile,
-                              validSuccessUrls
-                            );
-
-                            await CreateLogFile(
-                              baseFolderPath,
-                              validFailedUrlsFile,
-                              validFailedUrls
-                            );
-
-                            if (
-                              fetchErrors &&
-                              fetchErrors.length &&
-                              fetchErrors.length > 0
-                            ) {
-                              const allMessages = fetchErrors.map(
-                                x => `${x.message} - ${x.stack}`
-                              );
-                              await CreateLogFile(
-                                baseLogFolderPath,
-                                errorLogFileName,
-                                allMessages
-                              );
-                            }
-
-                            invalidUrls = new Array();
-                            validSuccessUrls = new Array();
-                            validFailedUrls = new Array();
-                            fetchErrors = new Array();
-                          });
-                        }
-                      }
-                      callback(); //must call this callback from series of tasks for it to finish!!
-                    };
-                  }),
-                  async (_err, _results) => {
-                    const baseFolderPath = `${siteBaseUrl}\\logs`;
-                    const errorLogFileName = `error.log`;
-                    if (_err) {
-                      await CreateLogFile(
-                        baseFolderPath,
-                        errorLogFileName,
-                        _err
-                      );
-                      console.log(`There were errors!`);
-                      console.log(
-                        `Please check : '${baseFolderPath}\\${errorLogFileName}' for more details.`
-                      );
-                    }
-                    console.log('ALL TASKS DONE !!!');
-                  }
-                );
-              });
-            }
-          });
-        })
+      const baseLogFolderPath = `${siteBaseUrl}\\logs`;
+      const baseFolderPath = `${baseLogFolderPath}\\${siteMapLogFileName}`;
+      await CreateLogFile(baseFolderPath, invalidUrlsFile, invalidUrls);
+      await CreateLogFile(
+        baseFolderPath,
+        validSuccessUrlsFile,
+        validSuccessUrls
       );
-      // return allPromises;
+
+      await CreateLogFile(baseFolderPath, validFailedUrlsFile, validFailedUrls);
+      console.log('finished !!');
     };
 
     async function CreateLogFile(
@@ -293,7 +189,62 @@ export class RendertronClient {
         console.log(`Error creating file ${fileName} !!`);
       }
     }
-    await fetchSitemapsParallel(RootSitemapToFetch, sitemapUrls);
+
+    /*     pushInQueue = (queue: async.AsyncQueue<TaskItem>, taskItem: TaskItem) => {
+      queue.push(taskItem);
+    }; */
+    // tslint:disable-next-line:no-any
+    const fetchSingleSiteMap = async (sitemapUrl: string): Promise<any[]> => {
+      return await fetch(sitemapUrl).then(async sitemapResp => {
+        if (sitemapResp.ok) {
+          const sitemapRespText = await sitemapResp.text();
+          const sitemapJs = convert.xml2js(sitemapRespText, {
+            compact: true
+          });
+          return jp.query(sitemapJs, '$..loc');
+        } else {
+          //there was error fetching sitemap!!
+          return [];
+        }
+      });
+    };
+
+    const fetchSitemapsParallel = async function(siteMapRoots: string[]) {
+      await Promise.all(
+        siteMapRoots.map(async sitemapRoot => {
+          return await fetchSingleSiteMap(sitemapRoot);
+        })
+      ).then(allRoots => {
+        allRoots.forEach(rootSiteMap => {
+          rootSiteMap.forEach(async itemSiteMap => {
+            const finalSiteMapUrl = itemSiteMap._text.trim();
+            return await fetchSingleSiteMap(finalSiteMapUrl).then(
+              async siteMapResponse => {
+                if (
+                  siteMapResponse &&
+                  siteMapResponse.length &&
+                  siteMapResponse.length > 0
+                ) {
+                  siteMapResponse.forEach((pageUrl, index) => {
+                    if (index > maxItemCount) {
+                      return false;
+                    } else {
+                      const pageUrlText = pageUrl._text.trim();
+                      queue.push({
+                        siteMap: finalSiteMapUrl,
+                        urlToFetch: pageUrlText
+                      });
+                    }
+                  });
+                }
+              }
+            );
+          });
+        });
+      });
+    };
+
+    await fetchSitemapsParallel(RootSitemapToFetch);
   }
 }
 
