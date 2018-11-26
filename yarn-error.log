@@ -1,5 +1,5 @@
 Arguments: 
-  C:\Program Files\nodejs\node.exe C:\Program Files (x86)\Yarn\bin\yarn.js start
+  C:\Program Files\nodejs\node.exe C:\Program Files (x86)\Yarn\bin\yarn.js start:sample
 
 PATH: 
   C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Users\khatrih\bin;C:\Program Files\Microsoft MPI\Bin;C:\ProgramData\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Program Files\Microsoft SQL Server\130\Tools\Binn;C:\Program Files (x86)\Microsoft SQL Server\Client SDK\ODBC\130\Tools\Binn;C:\Program Files (x86)\Microsoft SQL Server\130\Tools\Binn;C:\Program Files (x86)\Microsoft SQL Server\130\DTS\Binn;C:\Program Files (x86)\Microsoft SQL Server\130\Tools\Binn\ManagementStudio;C:\Program Files (x86)\Microsoft SQL Server\110\DTS\Binn;C:\Program Files (x86)\Microsoft SQL Server\120\DTS\Binn;C:\Program Files\Microsoft\Web Platform Installer;C:\Program Files\TortoiseHg;C:\Program Files\dotnet;C:\Nuget;C:\Program Files (x86)\GitExtensions;C:\Program Files\Microsoft Service Fabric\bin\Fabric\Fabric.Code;C:\Program Files\Microsoft SDKs\Service Fabric\Tools\ServiceFabricLocalClusterManager;C:\Program Files\SourceGear\Common\DiffMerge;C:\Program Files (x86)\Microsoft SQL Server\140\DTS\Binn;C:\Program Files (x86)\Microsoft SQL Server\140\Tools\Binn;C:\Program Files (x86)\Microsoft SQL Server\140\Tools\Binn\ManagementStudio;C:\Program Files\Microsoft SQL Server\130\DTS\Binn;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\130\Tools\Binn;C:\Program Files (x86)\Yarn\bin;C:\Program Files\Microsoft SQL Server\140\Tools\Binn;C:\Program Files\Microsoft SQL Server\140\DTS\Binn;C:\Windows\Microsoft.NET\Framework64\v4.0.30319;C:\Program Files\TortoiseGit\bin;C:\Python27;C:\Program Files\Git\cmd;C:\Program Files (x86)\dotnet;C:\Program Files\nodejs;C:\Users\khatrih\AppData\Local\Programs\Python\Python36-32\Scripts;C:\Users\khatrih\AppData\Local\Programs\Python\Python36-32;C:\Users\khatrih\AppData\Local\Microsoft\WindowsApps;C:\Program Files\Microsoft VS Code\bin;C:\Users\khatrih\AppData\Local\Yarn\bin;C:\Users\khatrih\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\khatrih\.dotnet\tools;C:\Users\khatrih\AppData\Roaming\npm
@@ -33,6 +33,8 @@ npm manifest:
       "start:rendertron": "npm run build && node build/rendertron.js",
       "start": "npm run build && npm run start:client",
       "start:client": "node build/rendertron-client.js",
+      "start:sample": "npm run build && npm run start:client:sample",
+      "start:client:sample": "node build/rendertron-client-sample.js",
       "format": "find src -name '*.ts' | xargs clang-format --style=file -i",
       "lint": "tslint --project . --format stylish",
       "monitor": "nodemon src/main.js",
@@ -4953,7 +4955,7 @@ Trace:
   Error: Command failed.
   Exit code: 2
   Command: C:\Windows\system32\cmd.exe
-  Arguments: /d /s /c npm run build && npm run start:client
+  Arguments: /d /s /c npm run build && npm run start:client:sample
   Directory: C:\Users\khatrih\source\repos\rendertron
   Output:
   

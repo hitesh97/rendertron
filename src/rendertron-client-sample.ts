@@ -2,12 +2,9 @@ import { Rendertron } from './rendertron';
 import fetch from 'node-fetch';
 import * as urlUtils from 'url';
 //import { promisify } from 'util';
-import * as convert from 'xml-js';
-import * as jp from 'jsonpath';
 import { isValidUrl } from './urlUtils';
 import { createFile } from './fileUtils';
 import { Promise } from 'core-js';
-import * as async from 'async';
 
 export class RendertronClient {
   constructor(PORT: string = '6000') {
@@ -31,43 +28,88 @@ export class RendertronClient {
     const validSuccessUrls: string[] = new Array();
     const validFailedUrls: string[] = new Array();
     const tronAPIUrl = `http://localhost:${process.env.PORT}/render-save/`;
-    const baseUrl = 'https://www.microlease.com/uk/';
-    // const baseUrl = 'https://www.electrorent.com/us/';
+    //const baseUrl = 'https://www.microlease.com/uk/';
+    const baseUrl = 'https://www.electrorent.com/us/';
 
-    const urlsToFetch: string[] = new Array(
+    const urlsToFetch: string[] = [
       'home',
-      'rent-test-equipment',
-      'used-test-equipment',
-      'new-test-equipment',
+      'all-manufacturers',
       'manufacturer/3ztel/3z-telecom',
-      'manufacturer/advt/advantest',
-      'manufacturer/ixia/ixia',
-      'product-group/3/rf-signal-generators',
-      'product-group/13/oscilloscopes',
-      'manufacturer/abb/asea brown boveri',
-      'manufacturer/ahsys/a.h. systems inc',
-      'manufacturer/afs /advanced fibre solution',
-      'manufacturer/asr/associated research, inc.',
-      'products/Keysight-Technologies/Other-Test-Equipment/04155-61612?basemodelid=38',
-      'products/Keysight-Technologies/Other-Test-Equipment/04142-61636?basemodelid=10',
-      'products/Keysight-Technologies/Other-Test-Equipment/04155-40045?basemodelid=24',
-      'products/Keysight-Technologies/Other-Test-Equipment/04155-61714?basemodelid=53',
-      'products/Keysight-Technologies/Other-Test-Equipment/0699-3702?basemodelid=116',
-      'products/Keysight-Technologies/RF-Power-Noise-and-Other-Products/11667A?basemodelid=322',
-      'products/Pomona-Electronics/Other-Test-Equipment/72938?basemodelid=128207',
-      'products/Pomona-Electronics/Other-Test-Equipment/72940-8?basemodelid=128209',
-      'products/Anritsu/Other-Test-Equipment/S332E-3025?basemodelid=126468',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA31?basemodelid=126489',
-      'products/Viavi-formerly-JDSU-/Other-Test-Equipment/C5243GCPRI-U1?basemodelid=126499',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT ZA31?basemodelid=1264893545',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA3187,?basemodelid=126489',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA3187&&?basemodelid=126489',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT-ZA3187^?basemodelid=126489',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT$ZA3187?basemodelid=126489',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT£ZA3187?basemodelid=126489',
-      'products/Rohde-Schwarz/Other-Test-Equipment/RT^ZA3187?basemodelid=126489'
-    );
-
+      'manufacturer/anri/anritsu',
+      'manufacturer/chrom/chroma',
+      'manufacturer/dob/doble',
+      'manufacturer/exfo/exfo',
+      'manufacturer/fl/fluke',
+      'manufacturer/instk/gw-instek',
+      'manufacturer/ky/keithley',
+      'manufacturer/keysi/keysight-technologies',
+      'manufacturer/meg/megger',
+      'manufacturer/rs/rohde-and-schwarz',
+      'manufacturer/tek/tektronix',
+      'manufacturer/jdsu/viavi',
+      'Services_Rental',
+      'rent-test-equipment',
+      'new-test-equipment',
+      'used-test-equipment',
+      'services_asset_management',
+      'accredited-lab',
+      'page/5g',
+      'contactus',
+      'products/keysight technologies/dc power supplies/n6700c?basemodelid=112907',
+      'products/keysight technologies/dc power supplies/n6762a?basemodelid=3834',
+      'products/keysight technologies/multimeters%2c data%c2%a0acquisition%2c counters/34465a?basemodelid=97082',
+      'products/keysight technologies/function%2fpulse generators/33522b?basemodelid=6042',
+      'products/keysight technologies/multimeters%2c data%c2%a0acquisition%2c counters/34972a?basemodelid=809',
+      'products/keysight technologies/oscilloscopes/msox3104t?basemodelid=96716',
+      'products/keysight technologies/other test equipment/e36312a?basemodelid=114705',
+      'products/keysight technologies/oscilloscopes/dsox1102g?basemodelid=112588',
+      'products/keysight technologies/rf network analyzers/n9952a?basemodelid=100398',
+      'products/keysight technologies/rf network analyzers/p9371a?basemodelid=126442',
+      'products/keysight technologies/rf spectrum analyzers/n9000b?basemodelid=101899',
+      'products/keysight technologies/rf power%2c noise and other products/u2043xa?basemodelid=97225',
+      'products/keithley/multimeters%2c data%c2%a0acquisition%2c counters/2602b?basemodelid=11218',
+      'products/tektronix/oscilloscopes/mdo4104c?basemodelid=101440',
+      'products/tektronix/other test equipment/mso58?basemodelid=118733',
+      'products/keithley/dc power supplies/2231a-30-3?basemodelid=97238',
+      'products/tektronix/oscilloscopes/mdo3012?basemodelid=93774',
+      'products/tektronix/rf spectrum analyzers/rsa306b?basemodelid=102386',
+      'products/keithley/multimeters%2c data%c2%a0acquisition%2c counters/dmm7510?basemodelid=97294',
+      'products/rohde   schwarz/rf signal generators/sma100b?basemodelid=118396',
+      'products/rohde   schwarz/other test equipment/rtm3004?basemodelid=123399',
+      'products/rohde   schwarz/other test equipment/rta4004?basemodelid=123377',
+      'products/rohde   schwarz/other test equipment/znle6?basemodelid=121288',
+      'products/rohde   schwarz/other test equipment/fpc1500?basemodelid=125033',
+      'products/rohde   schwarz/rf spectrum analyzers/fsv13?basemodelid=12426',
+      'all-product-groups ',
+      'product-group/20/ac-sources ',
+      'product-group/21/ac-dc-electronic-loads ',
+      'product-group/6/bert-arb-pattern-generators ',
+      'product-group/10/cable-antenna-and-pim-analysers ',
+      'product-group/19/dc-power-supplies ',
+      'product-group/27/electrical-installation-and-high-voltage-test ',
+      'product-group/26/electrical-power-and-energy-measurement ',
+      'product-group/23/electrical-test-equipment ',
+      'product-group/24/environmental-test-equipment ',
+      'product-group/18/function-pulse-generators ',
+      'product-group/28/infrared-and-temerature-measurement ',
+      'product-group/11/lan-wan-analysers ',
+      'product-group/17/lcr-impedance-analysers ',
+      'product-group/22/logic-analysers ',
+      'product-group/9/mobile-comms-test-equipment ',
+      'product-group/15/modular-products ',
+      'product-group/14/multimeters-data%C2%A0acquisition-counters ',
+      'product-group/7/optical-sampling-scopes ',
+      'product-group/8/optical-test-equipment ',
+      'product-group/13/oscilloscopes ',
+      'product-group/2/rf-network-analysers ',
+      'product-group/4/rf-power-noise-and-other-products ',
+      'product-group/3/rf-signal-generators ',
+      'product-group/1/rf-spectrum-analysers ',
+      'product-group/5/sdh-sonet-ethernet ',
+      'product-group/16/semiconductor-parametric-analysers ',
+      'product-group/12/xdsl-t1-e1-test-equipment ',
+      'product-group/25/other-test-equipment'
+    ];
     const getParallel = async function() {
       //transform requests into Promises, await all
       try {
@@ -150,283 +192,6 @@ export class RendertronClient {
     };
     getParallel();
   }
-
-  public async startSiteMap() {
-    this._tron = new Rendertron(process.env.PORT);
-    await this._tron.initialize();
-    // server has started on port 5000
-    // make API one of the following type of requests  to: http://localhost:5000/
-    // http://localhost:5000/render-save/https://www.microlease.com/uk/new-test-equipment
-    // http://localhost:5000/render/https://www.microlease.com/uk/new-test-equipment
-    // http://localhost:5000/screenshot/https://www.microlease.com/uk/new-test-equipment
-
-    console.log('tron initialised !!');
-
-    const maxItemCount: number = 2;
-    const sitemapUrls: string[] = new Array();
-    // const validUrlsToFetch: string[] = new Array();
-    // tslint:disable-next-line:prefer-const
-    let invalidUrls: string[] = new Array();
-    // tslint:disable-next-line:prefer-const
-    let validSuccessUrls: string[] = new Array();
-    // tslint:disable-next-line:prefer-const
-    let validFailedUrls: string[] = new Array();
-    let fetchErrors: Error[] = new Array();
-    const tronAPIUrl = `http://localhost:${process.env.PORT}/render-save/`;
-    const MLSiteMapRoots: string[] = new Array();
-
-    // fetch root sitemap(s) for ML and ER
-    /*
-    const MLSiteMapRoots: string[] = new Array(
-      'https://www.microlease.com/uk/sitemap.xml',
-      'https://www.microlease.com/no/sitemap.xml',
-      'https://www.microlease.com/nl/sitemap.xml',
-      'https://www.microlease.com/it/sitemap.xml',
-      'https://www.microlease.com/in/sitemap.xml',
-      'https://www.microlease.com/fr/sitemap.xml',
-      'https://www.microlease.com/eu/sitemap.xml',
-      'https://www.microlease.com/es/sitemap.xml',
-      'https://www.microlease.com/de/sitemap.xml',
-      'https://www.microlease.com/be_nl/sitemap.xml',
-      'https://www.microlease.com/be_fr/sitemap.xml',
-      'https://www.microlease.com/asia_en/sitemap.xml',
-      'https://www.microlease.com/africa_en/sitemap.xml'
-    );
-
-    const ERSiteMapRoots: string[] = new Array(
-      'https://www.electrorent.com/us/sitemap.xml',
-      'https://www.electrorent.com/latin_es/sitemap.xml'
-    );
-*/
-
-    const ERSiteMapRoots: string[] = new Array(
-      'https://www.electrorent.com/us/sitemap.xml'
-    );
-
-    const RootSitemapToFetch = [...ERSiteMapRoots, ...MLSiteMapRoots];
-
-    console.log('------------- RootSitemapToFetch ------------------');
-    console.log(RootSitemapToFetch);
-    console.log('------------- RootSitemapToFetch ------------------');
-
-    const fetchSitemapsParallel = async function(
-      siteMapRoots: string[],
-      siteMapsToFetch: string[]
-    ) {
-      return await Promise.all(
-        siteMapRoots.map(async (url: string) => {
-          const urlToRequest = `${url}`;
-          return await fetch(urlToRequest).then(response => {
-            if (response.ok) {
-              response.text().then(async responseText => {
-                //console.log(responseText);
-                const sitemapJs = convert.xml2js(responseText, {
-                  compact: true
-                });
-                const locs = jp.query(sitemapJs, '$..loc');
-
-                // tslint:disable-next-line:no-any
-                locs.map(async (loc: any) => {
-                  if (loc._text.endsWith('.xml')) {
-                    siteMapsToFetch.push(loc._text);
-                  }
-                });
-                console.log(siteMapsToFetch);
-                let siteBaseUrl = '';
-                async.series(
-                  siteMapsToFetch.map(siteMapToFetch => {
-                    // tslint:disable-next-line:no-any
-                    return async function(callback: any) {
-                      //console.log(siteMapToFetch);
-
-                      const parsedSiteMapUrl = urlUtils.parse(siteMapToFetch);
-                      const siteMapLogFileName = parsedSiteMapUrl.path
-                        ? parsedSiteMapUrl.path.substr(
-                            parsedSiteMapUrl.path.lastIndexOf('/') + 1
-                          )
-                        : '';
-                      console.log(siteMapLogFileName);
-                      const sitemapResp = await fetch(siteMapToFetch);
-                      if (sitemapResp.ok) {
-                        const sitemapRespText = await sitemapResp.text();
-
-                        const sitemapJs = convert.xml2js(sitemapRespText, {
-                          compact: true
-                        });
-
-                        const locs = jp.query(sitemapJs, '$..loc');
-
-                        //create Site Base URL from one of the URLs to fetch!
-                        if (locs.length && locs.length > 0) {
-                          // do this only one time first time..!!
-                          const validUrlForCountryCode = locs[0]._text.trim();
-                          const parsedUrlForCountryCode = urlUtils.parse(
-                            validUrlForCountryCode
-                          );
-                          const countryCode = parsedUrlForCountryCode.path
-                            ? parsedUrlForCountryCode.path.slice(
-                                0,
-                                parsedUrlForCountryCode.path.indexOf('/', 1) + 1
-                              )
-                            : '';
-                          siteBaseUrl = `${parsedUrlForCountryCode.protocol}//${
-                            parsedUrlForCountryCode.hostname
-                          }${countryCode}`;
-
-                          // console.log(siteBaseUrl);
-
-                          return await Promise.all(
-                            // tslint:disable-next-line:no-any
-                            locs.map(async (loc: any, index: number) => {
-                              if (loc._text.endsWith('.xml')) {
-                                //may be add to the main sitemaps array !!
-                                // siteMapsToFetch.push(loc._text);
-                                console.log('Got another sitemap !');
-                                console.log(loc._text);
-                              } else {
-                                //validUrlsToFetch.push(loc._text);
-                                if (index > maxItemCount) {
-                                  return false;
-                                }
-                                // do this only one time first time..!!
-                                const pageUrl = loc._text;
-                                const trimmedPageUrl = pageUrl.trim();
-                                //console.log(`trimmedPageUrl: ${trimmedPageUrl}`);
-                                const parsedPageUrl = urlUtils.parse(
-                                  trimmedPageUrl
-                                );
-
-                                const urlPathWithQuery = parsedPageUrl.path
-                                  ? parsedPageUrl.path
-                                  : '';
-
-                                // console.log(urlPathWithQuery);
-                                const isValid = isValidUrl(urlPathWithQuery);
-                                if (isValid) {
-                                  const encodedQueryStr = encodeURIComponent(
-                                    parsedPageUrl.search
-                                      ? parsedPageUrl.search
-                                      : ''
-                                  );
-                                  const finalUrlToRequest = `${tronAPIUrl}${
-                                    parsedPageUrl.protocol
-                                  }${parsedPageUrl.host}${
-                                    parsedPageUrl.pathname
-                                  }${encodedQueryStr}`;
-
-                                  console.log(`processing url: ${loc._text}`);
-
-                                  await fetch(finalUrlToRequest)
-                                    .then(response => {
-                                      if (response.ok) {
-                                        // console.log(`finalUrlToRequest: ${finalUrlToRequest} !!`);
-                                        console.log(
-                                          `fetched Url: ${trimmedPageUrl} !!`
-                                        );
-                                        validSuccessUrls.push(trimmedPageUrl);
-                                      }
-                                    })
-                                    .catch(async (error: Error) => {
-                                      validFailedUrls.push(trimmedPageUrl);
-                                      fetchErrors.push(error);
-                                      console.error(
-                                        `Url: ${trimmedPageUrl} could not be fetched!!`
-                                      );
-                                    });
-                                } else {
-                                  invalidUrls.push(trimmedPageUrl);
-                                }
-                              }
-                            })
-                            // tslint:disable-next-line:arrow-parens
-                          ).then(async () => {
-                            const invalidUrlsFile = `invalid.json`;
-                            const validSuccessUrlsFile = `validSuccess.json`;
-                            const validFailedUrlsFile = `validFailed.json`;
-                            const errorLogFileName = `errorLog.json`;
-                            const baseLogFolderPath = `${siteBaseUrl}\\logs`;
-                            const baseFolderPath = `${baseLogFolderPath}\\${siteMapLogFileName}`;
-
-                            console.log('--*******************--');
-                            console.log(baseFolderPath);
-                            console.log('--*******************--');
-                            await CreateLogFile(
-                              baseFolderPath,
-                              invalidUrlsFile,
-                              invalidUrls
-                            );
-
-                            await CreateLogFile(
-                              baseFolderPath,
-                              validSuccessUrlsFile,
-                              validSuccessUrls
-                            );
-
-                            await CreateLogFile(
-                              baseFolderPath,
-                              validFailedUrlsFile,
-                              validFailedUrls
-                            );
-
-                            const allMessages = fetchErrors.map(
-                              x => `${x.message} - ${x.stack}`
-                            );
-                            await CreateLogFile(
-                              baseLogFolderPath,
-                              errorLogFileName,
-                              allMessages
-                            );
-
-                            invalidUrls = new Array();
-                            validSuccessUrls = new Array();
-                            validFailedUrls = new Array();
-                            fetchErrors = new Array();
-                          });
-                        }
-                      }
-                      callback(); //must call this callback from series of tasks for it to finish!!
-                    };
-                  }),
-                  async (_err, _results) => {
-                    const baseFolderPath = `${siteBaseUrl}\\logs`;
-                    const errorLogFileName = `error.log`;
-                    if (_err) {
-                      await CreateLogFile(
-                        baseFolderPath,
-                        errorLogFileName,
-                        _err
-                      );
-                      console.log(`There were errors!`);
-                      console.log(
-                        `Please check : '${baseFolderPath}\\${errorLogFileName}' for more details.`
-                      );
-                    }
-                    console.log('ALL TASKS DONE !!!');
-                  }
-                );
-              });
-            }
-          });
-        })
-      );
-      // return allPromises;
-    };
-
-    async function CreateLogFile(
-      baseFolderPath: string,
-      fileName: string,
-      // tslint:disable-next-line:no-any
-      dataToLog: any
-    ) {
-      const fileCreated = await createFile(baseFolderPath, fileName, dataToLog);
-      if (fileCreated) {
-        console.log(`File ${fileName} was created !!`);
-      } else {
-        console.log(`Error creating file ${fileName} !!`);
-      }
-    }
-    await fetchSitemapsParallel(RootSitemapToFetch, sitemapUrls);
-  }
 }
 
 async function logUncaughtError(error: Error) {
@@ -437,8 +202,7 @@ async function logUncaughtError(error: Error) {
 
 if (!module.parent) {
   const rendertronClient = new RendertronClient();
-  // rendertronClient.start();
-  rendertronClient.startSiteMap();
+  rendertronClient.start();
 
   process.on('uncaughtException', logUncaughtError);
   process.on('unhandledRejection', logUncaughtError);
