@@ -17,7 +17,7 @@
     "start:rendertron": "npm run build && node build/rendertron.js",
     "start": "npm run build && npm run start:client",
     "start:client": "node build/rendertron-client.js",
-    "start:samall": "npm run build && npm run start:client:sample",
+    "start:small": "npm run build && npm run start:client:small",
     "start:client:small": "node build/rendertron-client-small.js",
     "format": "find src -name '*.ts' | xargs clang-format --style=file -i",
     "lint": "tslint --project . --format stylish",
